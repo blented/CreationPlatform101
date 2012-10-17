@@ -1,0 +1,14 @@
+use Vec3, FabricMath;
+const Scalar TIMESTEP = 0.01;
+
+operator SlicedParticleSystem( in Integer frame, in Size count, io Container selfContainer, in Index index, io Vec3 positions<>, in Vec3 gravity ){
+  report('done');
+  if(frame == 0) {
+    selfContainer.resize(count);
+    positions[index].x = mathRandomScalar(index, frame);
+    positions[index].z = mathRandomScalar(index, frame + 20);
+  }
+  positions[index] += gravity * TIMESTEP;
+  if(index==0)
+    report("First particle position is: "+positions[index]);
+}

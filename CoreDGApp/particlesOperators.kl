@@ -1,0 +1,20 @@
+use Vec3, FabricMath;
+const Scalar TIMESTEP = 0.01;
+
+function setRandomPosition_perParticle( in Size index, in Integer offset, io Vec3 positions[] ) {
+    positions[index].x = mathRandomScalar(index, offset);
+    positions[index].y = 10;
+    positions[index].z = mathRandomScalar(index, offset + 20);
+}
+
+function applyForces_perParticle( in Size index, in Vec3 gravity, io Vec3 positions[] ) {
+  positions[index] += gravity * TIMESTEP;
+}
+
+operator ParticleSystem( in Integer frame, in Scalar rate, in Size count, io Vec3 positions[], in Vec3 gravity ){
+  if(frame == 0) {
+    positions.resize(count);
+    executeParallel( setRandomPosition_perParticle, positions.size, frame, positions );
+  }
+  executeParallel( applyForces_perParticle, positions.size, gravity, positions );
+}

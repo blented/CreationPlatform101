@@ -1,0 +1,82 @@
+use Vec3;
+use Xfo;
+use FabricMath;
+use GeometryAttributesRT;
+
+
+function addPoints( 
+  in Scalar time,
+  io GeometryAttributes attributes,
+  io GeometryAttributes emitterAttributes,
+  in AttributeKey velocityAttrKey, 
+  in AttributeKey ageAttrKey,
+  in AttributeKey emitterVelocityAttrKey
+) {
+  if(time==0) {
+    attributes.resize(emitterAttributes.size());
+    attributes.scalarAttributes[Attribute_Pos].data = emitterAttributes.scalarAttributes[Attribute_Pos].data.clone();
+    attributes.scalarAttributes[velocityAttrKey.index].data = emitterAttributes.scalarAttributes[emitterVelocityAttrKey.index].data.clone();
+  }
+  else {
+    for(Index i=0; i< emitterAttributes.size(); i++)
+    {
+      Index voff = i * 3;
+      attributes.scalarAttributes[Attribute_Pos].data.push(emitterAttributes.scalarAttributes[Attribute_Pos].data[voff+0]);
+      attributes.scalarAttributes[Attribute_Pos].data.push(emitterAttributes.scalarAttributes[Attribute_Pos].data[voff+1]);
+      attributes.scalarAttributes[Attribute_Pos].data.push(emitterAttributes.scalarAttributes[Attribute_Pos].data[voff+2]);
+
+      attributes.scalarAttributes[velocityAttrKey.index].data.push(emitterAttributes.scalarAttributes[velocityAttrKey.index].data[voff+0]);
+      attributes.scalarAttributes[velocityAttrKey.index].data.push(emitterAttributes.scalarAttributes[velocityAttrKey.index].data[voff+1]);
+      attributes.scalarAttributes[velocityAttrKey.index].data.push(emitterAttributes.scalarAttributes[velocityAttrKey.index].data[voff+2]);      
+    }
+    attributes.resize(attributes.size() + emitterAttributes.size());
+
+  }
+}
+
+function eulerIntegration__( 
+  in Index index,
+  in Scalar timestep,
+  io ScalarAttribute positionsAttr,
+  io ScalarAttribute velocitiesAttr,
+  in Vec3 force ) {
+  Vec3 newVelocity = velocitiesAttr.getVec3Value(index * 3) + force * timestep;
+
+  Vec3 newPosition = positionsAttr.getVec3Value(index * 3);
+  newPosition += newVelocity * timestep;
+
+  positionsAttr.setVec3Value(index * 3, newPosition);
+  velocitiesAttr.setVec3Value(index * 3, newVelocity);
+}
+
+operator SimulatedParticleOp(
+  io GeometryAttributes attributes,
+  io Integer generation,
+  in Scalar time,
+  in Scalar timestep,  
+  io GeometryAttributes emitterAttributes,
+  in Vec3 gravity,
+  in Vec3 force,
+  in Scalar intensity
+) {
+
+  AttributeKey velocityAttrKey = attributes.getKey("velocities");
+  AttributeKey ageAttrKey = attributes.getKey("ages");
+  AttributeKey emitterVelocityAttrKey = emitterAttributes.getKey("velocities");
+
+  addPoints( time, attributes, emitterAttributes, velocityAttrKey, ageAttrKey, emitterVelocityAttrKey);
+
+  if(time>0)
+  {
+    executeParallel( 
+      eulerIntegration__,
+        attributes.size,
+        timestep,
+        attributes.scalarAttributes[Attribute_Pos],
+        attributes.scalarAttributes[velocityAttrKey.index],
+        gravity+force.unit()*intensity
+    );
+  }
+  generation+=1;
+
+}

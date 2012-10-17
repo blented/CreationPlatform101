@@ -1,0 +1,69 @@
+//
+// Copyright 2010-2011 Fabric Technologies Inc. All rights reserved.
+//
+
+use Vec3;
+use Xfo;
+use FabricMath;
+use GeometryAttributesRT;
+
+
+function setParticleOnDisc__(
+  in Size index,
+  in Integer offset,
+  io ScalarAttribute positionsAttr,
+  io ScalarAttribute velocitiesAttr,
+  in Vec3 initialVelocity,
+  in Vec3 initialVelocityVariance,  
+  in Xfo emitterLocalXfo
+){
+    Index i = 0;
+    Vec3 position;
+    do {
+      position = Vec3( mathRandomScalar(index, offset + i) - 0.5, 0.0, mathRandomScalar(index, offset + i + 500) - 0.5 );
+      i+=1;
+    } while (position.lengthSquared() > 0.25 & i < 1000);
+    
+    Index voff = index * 3;
+    position *= 2;
+
+    position = emitterLocalXfo.transformVector( Vec3(position) );
+    positionsAttr.setVec3Value(voff, Vec3(position.x, position.y, position.z));
+
+    Vec3 rndInitVelocity = initialVelocity;
+    rndInitVelocity.x += (mathRandomScalar(index, 123) - 0.5) * initialVelocityVariance.x;
+    rndInitVelocity.y += (mathRandomScalar(index, 345) - 0.5) * initialVelocityVariance.y;
+    rndInitVelocity.z += (mathRandomScalar(index, 456) - 0.5) * initialVelocityVariance.z;
+    rndInitVelocity = emitterLocalXfo.ori.rotateVector( Vec3(rndInitVelocity) );
+    velocitiesAttr.setVec3Value(index * 3, rndInitVelocity);
+}
+
+operator DiscEmitterGenerator(
+  io GeometryAttributes attributes,
+  in Scalar time,
+  in Scalar fps,
+  in Size pointCount,
+  in Integer seed,
+  in Vec3 initialVelocity,
+  in Vec3 initialVelocityVariance,
+  in Xfo emitterLocalXfo,
+  io Integer generation
+) {
+  attributes.resize( pointCount );
+  AttributeKey velocityAttrKey = attributes.getKey("velocities");
+
+  Integer offset = fps*time + seed;
+  executeParallel( 
+    setParticleOnDisc__, 
+      pointCount, offset, 
+      attributes.scalarAttributes[Attribute_Pos], 
+      attributes.scalarAttributes[velocityAttrKey.index], 
+      initialVelocity, 
+      initialVelocityVariance, 
+      emitterLocalXfo
+  );
+  generation+=1;
+}
+
+
+
