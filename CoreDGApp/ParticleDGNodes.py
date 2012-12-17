@@ -38,7 +38,7 @@ for regType in FabricEngine.CreationPlatform.RT.getRegisteredTypes():
 # All the work to define our dependency graph is really starting here!
 
 particlesNode = FabricCoreClient.DG.createNode('particles')
-particlesNode.addMember(memberName='pointsCount', memberType='Size', defaultValue=100)
+particlesNode.addMember('pointsCount', 'Size', 100)
 particlesNode.addMember('positions', 'Vec3[]')
 
 timerNode = FabricCoreClient.DG.createNode('timer')
@@ -48,13 +48,13 @@ timerNode.addMember('rate', 'Scalar', 60.0)
 forcesNode = FabricCoreClient.DG.createNode('forces')
 forcesNode.addMember('gravity', 'Vec3', Vec3(0.0, -9.81, 0.0))
 
-particlesNode.setDependency(dependencyNode=timerNode, dependencyName='timer')
+particlesNode.setDependency(timerNode, 'timer')
 particlesNode.setDependency(forcesNode, 'forces')
 
 # The operator that will create our particles
 operator = FabricCoreClient.DG.createOperator(name='ParticleSystem')
 operator.setEntryPoint('ParticleSystem')
-operator.setSourceCode('None', sourceCode = open('particlesOperators.kl').read())
+operator.setSourceCode(open('particlesOperators.kl').read())
 
 # We instanciate a Binding object. It will glue the data with the operator.
 binding = FabricCoreClient.DG.createBinding()
